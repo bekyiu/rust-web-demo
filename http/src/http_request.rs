@@ -38,6 +38,7 @@ pub enum Resource {
     PATH(String),
 }
 
+#[derive(Debug)]
 pub struct HttpRequest {
     pub method: Method,
     pub version: Version,
@@ -77,9 +78,11 @@ impl From<String> for HttpRequest {
         // header
         let mut i = 1;
         while lines[i].len() != 0 {
-            let mut iter = lines[i].split(":");
-            let key = iter.next().unwrap();
-            let value = iter.next().unwrap().trim();
+            let line = lines[i];
+            let index = line.find(":").unwrap();
+            
+            let key = &line[..index].trim();
+            let value = &line[index + 1 ..].trim();
             println!("key: {:?}, value: {:?}", key, value);
             headers.insert(key.to_string(), value.to_string());
             i += 1;
@@ -88,7 +91,11 @@ impl From<String> for HttpRequest {
         i += 1;
         // body
         if i < lines.len() {
-            body = lines[i].to_string();
+            let line = lines[i];
+            body = match line.find("\0") {
+                Some(end) => (&line[..end]).to_string(),
+                None => line.to_string(),
+            };
         }
         println!("body: {:?}", body);
         
